@@ -1,0 +1,224 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+
+  <title>The HTML5 Herald</title>
+  <meta name="description" content="The HTML5 Herald">
+  <meta name="author" content="SitePoint">
+
+	<script src="http://192.168.0.152:8099/socket.io/socket.io.js"></script>
+	<script src="http://192.168.0.152:8099/js/jquery.js"></script>
+
+  <!--[if lt IE 9]>
+  <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+  <![endif]-->
+</head>
+
+<body>
+
+<script>
+
+
+	$(document).ready(function(){
+
+        	var socket = io.connect("192.168.0.152:8099");
+
+        	socket.on("connect", function (data) {
+		
+        	    console.log('con');
+
+        	    var name = '';
+
+        	    while(name == '' || name.length < 3){
+        	        name = prompt("Enter your name please!");
+        	    
+        	        socket.emit('introduce', { name: name });
+        	    }
+        	});
+
+
+        	
+
+        	socket.on("recents", function (data) {
+
+        	    console.log(data);
+
+
+        	    for (var i = 0; i < data.length ; i++) {
+
+                    stopedTyrping();
+    
+                    var msg = data[i].message;
+                    var name = data[i].name;
+    
+                    $('#chatroom').append('<div class="chatPaneFrame " ><div class="chatPane right"><span style="color:darkgray; font-size:14px;">' + name + ':</span><br /><span style="margin-left:8px;">' + msg + '</span>' +
+                        '</div><br style="clear:both;" /></div>');
+    
+                    $('#chatroom').scrollTop(999999999);
+        	    }
+        	});
+
+
+        	socket.on("msg", function (data) {
+
+        	    console.log(data);
+
+        	    stopedTyrping();
+
+        	    var msg = data.message;
+        	    var name = data.name;
+
+        	    $('#chatroom').append('<div class="chatPaneFrame " ><div class="chatPane right"><span style="color:darkgray; font-size:14px;">' + name + ':</span><br /><span style="margin-left:8px;">' + msg + '</span>'+
+                    '</div><br style="clear:both;" /></div>');
+
+        	    $('#chatroom').scrollTop(999999999);
+        	});
+        	
+
+        	
+        	socket.on("writing", function () {
+
+        	    console.log('writing');
+
+        	    $('#writing').fadeIn();
+        	});
+
+        	socket.on("stopedwriting", function () {
+
+        	    stopedTyrping();
+        	});
+
+        	$('#send').click(function () {
+
+        	    var msg = $('#chatText').val();
+
+        	    if (msg === '')
+        	        return;
+
+        	    $('#chatroom').append('<div class="chatPaneFrame " ><div class="chatPane left"><span style="color:darkgray; font-size:14px;">Me:</span><br /><span style="margin-left:8px;">' + msg + '</span></div></div>');
+        	    $('#chatText').val('');
+        	    $('#chatroom').scrollTop(999999999);
+
+        	    stopedTyrping();
+
+        	    socket.emit('msg', { message: msg });
+        	});
+
+        
+        	function stopedTyrping() {
+
+        	    isTyping = false;
+        	    $('#writing').hide();
+
+        	    console.log('stopedTyrping');
+        	}
+
+        	$('#chatText').keypress(function (e) {
+
+        	    if (e.keyCode == 13) {
+        	        $('#send').click();
+        	        $('#chatText').val('');
+
+        	        e.preventDefault();
+        	    }
+
+
+        	});
+
+        	var isTyping = 0;
+        	$('#writing').hide();
+
+        	$('#chatText').on('input', function (e) {
+        	    
+        	    if ($('#chatText').val().length > 0 && !isTyping) {
+
+        	        isTyping = true;
+
+        	        socket.emit('writing');
+        	    }
+
+        	    if ($('#chatText').val() == '') {
+
+        	        socket.emit('stopedwriting');
+        	        stopedTyrping()
+        	    }
+        	        
+        	});
+	});
+
+    </script>
+
+    <style>
+
+        * {
+
+            font-family:Calibri;
+        }
+
+        .chatroom {
+            width:400px; 
+            height:400px; 
+            border:1px black solid; 
+            position:relative; 
+            padding:10px; 
+            overflow-y:scroll; 
+            overflow-x:hidden;
+            background:#808080;
+        }
+
+        .chatPaneFrame {
+             
+             width:100%;  
+             margin-top:5px; 
+            
+        }
+
+        .chatPaneFrame.right {
+             
+            direction:rtl;
+        }
+
+        .chatPane {
+
+            min-height:20px;
+            padding:3px;
+           border-radius:10px;
+            max-width: 60%;
+            word-break:break-all;
+        }
+
+        .chatPane.left {
+            display:inline-block;
+            background:#c5ffa2;
+            border:#b4ea94 1px solid;
+
+             padding-bottom:6px; 
+            padding-right:10px; 
+            
+        }
+
+        .chatPane.right{
+            float:right;
+            display:inline-block;
+            background:#ffffe7;
+            border:#e8e8c9 1px solid;
+
+             padding-bottom:6px; 
+            padding-right:10px; 
+        }
+
+
+    </style>
+
+    <div id="chatroom" class="chatroom" >
+
+        
+    </div>
+    <textarea  id="chatText" placeholder="chat here!" name="chat" ></textarea>
+    <button type="button" id="send" >send</button>
+    <span id="writing">some one is writing...</span>
+
+</body>
+</html>
